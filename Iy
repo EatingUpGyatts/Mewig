@@ -2279,9 +2279,10 @@ local ChatPlaceholder = createInstance("TextLabel", {
     Parent = ChatLogFrame
 })
 
---// ============================================
---// 10. MOBILE QUICK ACTIONS (with Dynamic Scaling)
---// ============================================
+-- ============================================
+-- 10. MOBILE QUICK ACTIONS (with Dynamic Scaling)
+-- ============================================
+
 -- Calculate scaled cell size for high-density displays
 local baseCellHeight = 35
 local scaledCellHeight = math.max(CONFIG.MobileMinCellSize, math.floor(baseCellHeight * MobileScaleFactor))
@@ -2297,6 +2298,7 @@ local QuickActionsFrame = createInstance("Frame", {
     ClipsDescendants = true,
     Parent = MainFrame
 })
+
 addCorner(QuickActionsFrame, 8)
 addStroke(QuickActionsFrame, Colors.Border, 1)
 
@@ -2317,6 +2319,7 @@ createInstance("UIPadding", {
 
 -- Quick Actions with toggle state tracking
 local QuickActionStates = {}
+
 local QuickActions = {
     {text = "Fly", onCmd = "fly", offCmd = "unfly", color = Colors.Blue, toggleable = true},
     {text = "Speed", onCmd = "speed 100", offCmd = "speed 16", color = Colors.Green, toggleable = true},
@@ -2325,8 +2328,13 @@ local QuickActions = {
     {text = "Jump", onCmd = "infjump", offCmd = "uninfjump", color = Colors.Green, toggleable = true},
     {text = "Teleport", onCmd = "goto random", offCmd = nil, color = Colors.Blue, toggleable = false},
     {text = "Invisible", onCmd = "invisible", offCmd = "visible", color = Colors.Purple, toggleable = true},
-    {text = "Tpwalk", onCmd = "tpwalk 1", offCmd = nil, color = Colors.TextDim, toggleable = false},
-    {text = "ToolKill", onCmd = "hkill all", offCmd = nil, color = Colors.Orange, toggleable = false},
+    {text = "Reset", onCmd = "reset", offCmd = nil, color = Colors.TextDim, toggleable = false},
+    {text = "Anti-Lag", onCmd = "antilag", offCmd = nil, color = Colors.Orange, toggleable = false},
+    
+    -- === NEW BUTTONS ===
+    {text = "Godmode", onCmd = "god", offCmd = "ungod", color = Colors.Red, toggleable = true},
+    {text = "Fullbright", onCmd = "fullbright", offCmd = "nofullbright", color = Colors.Yellow, toggleable = true},
+    {text = "Platform", onCmd = "platform", offCmd = "unplatform", color = Colors.Cyan, toggleable = true},
 }
 
 for i, action in ipairs(QuickActions) do
@@ -2342,26 +2350,25 @@ for i, action in ipairs(QuickActions) do
         LayoutOrder = i,
         Parent = QuickActionsFrame
     })
+
     addCorner(btn, 4)
-    
-    -- Initialize state before setting up events
+
+    -- Initialize state
     QuickActionStates[action.text] = false
-    
-    -- Helper function to update button visual based on toggle state
+
+    -- Helper function to update button visual
     local function updateButtonVisual()
         local isActive = action.toggleable and QuickActionStates[action.text]
         if isActive then
-            -- Active toggle state - show highlighted
             btn.BackgroundTransparency = 0.2
             btn.TextColor3 = Color3.new(1, 1, 1)
         else
-            -- Default/inactive state
             btn.BackgroundTransparency = 0.7
             btn.TextColor3 = Colors.Text
         end
     end
-    
-    -- Desktop hover effects (only apply on non-mobile)
+
+    -- Desktop hover effects
     if not IsMobile then
         ConnectPersistent(btn.MouseEnter, function()
             local isActive = QuickActionStates[action.text]
@@ -2370,9 +2377,8 @@ for i, action in ipairs(QuickActions) do
                 TextColor3 = Color3.new(1, 1, 1)
             }):Play()
         end)
-        
+
         ConnectPersistent(btn.MouseLeave, function()
-            -- Respect toggle state when leaving
             local isActive = QuickActionStates[action.text]
             local targetTransparency = isActive and 0.2 or 0.7
             local targetColor = isActive and Color3.new(1, 1, 1) or Colors.Text
@@ -2382,32 +2388,24 @@ for i, action in ipairs(QuickActions) do
             }):Play()
         end)
     end
-    
-    -- Press effect (works on both mobile and desktop)
+
+    -- Press & Click handlers (unchanged)
     ConnectPersistent(btn.MouseButton1Down, function()
-        TweenService:Create(btn, TweenInfo.new(0.05), {
-            BackgroundTransparency = 0
-        }):Play()
+        TweenService:Create(btn, TweenInfo.new(0.05), { BackgroundTransparency = 0 }):Play()
     end)
-    
+
     ConnectPersistent(btn.MouseButton1Up, function()
-        -- Return to appropriate state after press
         local isActive = QuickActionStates[action.text]
         local targetTransparency = isActive and 0.2 or 0.7
-        TweenService:Create(btn, TweenInfo.new(0.1), {
-            BackgroundTransparency = targetTransparency
-        }):Play()
+        TweenService:Create(btn, TweenInfo.new(0.1), { BackgroundTransparency = targetTransparency }):Play()
     end)
-    
-    -- Click/Tap handler (works on both mobile and desktop)
+
     ConnectPersistent(btn.MouseButton1Click, function()
         if action.toggleable then
-            -- Toggle state
             local wasActive = QuickActionStates[action.text]
             QuickActionStates[action.text] = not wasActive
             local isNowActive = QuickActionStates[action.text]
-            
-            -- Execute appropriate command
+
             local cmd = wasActive and action.offCmd or action.onCmd
             if cmd then
                 InputBox.Text = cmd
@@ -2415,14 +2413,11 @@ for i, action in ipairs(QuickActions) do
                 task.wait(0.1)
                 InputBox:ReleaseFocus(true)
             end
-            
-            -- Visual feedback for toggle state (immediate update)
-            local targetTransparency = isNowActive and 0.2 or 0.7
-            local targetColor = isNowActive and Color3.new(1, 1, 1) or Colors.Text
-            btn.BackgroundTransparency = targetTransparency
-            btn.TextColor3 = targetColor
+
+            -- Update visual
+            btn.BackgroundTransparency = isNowActive and 0.2 or 0.7
+            btn.TextColor3 = isNowActive and Color3.new(1, 1, 1) or Colors.Text
         else
-            -- Non-toggleable actions (one-time execution)
             InputBox.Text = action.onCmd
             InputBox:CaptureFocus()
             task.wait(0.1)
@@ -2431,15 +2426,16 @@ for i, action in ipairs(QuickActions) do
     end)
 end
 
+-- Update grid height for 12 items (4 rows)
 local rows = math.ceil(#QuickActions / 3)
 local gridHeight = (rows * scaledCellHeight) + ((rows - 1) * 4) + 12
 
--- Quick Actions Toggle moved to left of input box for mobile (to avoid minimizing obstruction)
+-- Rest of your code (QuickActionsToggle) remains unchanged
 local QuickActionsToggle = createInstance("TextButton", {
     Name = "QuickActionsToggle",
     Size = UDim2.new(0, QuickActionWidth, 0, QuickActionWidth),
-    AnchorPoint = Vector2.new(0, 0), -- Top-Left alignment
-    Position = UDim2.new(0, 8 + BtnWidth + 6, 0, 10), -- Placed after Mode Dropdown
+    AnchorPoint = Vector2.new(0, 0),
+    Position = UDim2.new(0, 8 + BtnWidth + 6, 0, 10),
     BackgroundColor3 = Colors.Purple,
     BackgroundTransparency = 0.5,
     Text = "⚡",
@@ -2450,9 +2446,11 @@ local QuickActionsToggle = createInstance("TextButton", {
     ZIndex = 5,
     Parent = MainFrame
 })
+
 addCorner(QuickActionsToggle, 4)
 
 local quickActionsOpen = false
+
 ConnectPersistent(QuickActionsToggle.MouseButton1Click, function()
     quickActionsOpen = not quickActionsOpen
     if quickActionsOpen then
@@ -2461,7 +2459,9 @@ ConnectPersistent(QuickActionsToggle.MouseButton1Click, function()
     else
         TweenService:Create(QuickActionsFrame, TweenInfo.new(0.2), {Size = UDim2.new(1, -16, 0, 0)}):Play()
         task.delay(0.2, function()
-            if not quickActionsOpen then QuickActionsFrame.Visible = false end
+            if not quickActionsOpen then
+                QuickActionsFrame.Visible = false
+            end
         end)
     end
 end)

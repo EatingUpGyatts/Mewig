@@ -2325,11 +2325,8 @@ local QuickActions = {
     {text = "Jump", onCmd = "infjump", offCmd = "uninfjump", color = Colors.Green, toggleable = true},
     {text = "Teleport", onCmd = "goto random", offCmd = nil, color = Colors.Blue, toggleable = false},
     {text = "Invisible", onCmd = "invisible", offCmd = "visible", color = Colors.Purple, toggleable = true},
-    {text = "Reset", onCmd = "reset", offCmd = nil, color = Colors.TextDim, toggleable = false},
-    {text = "Fling", onCmd = "antilag", offCmd = nil, color = Colors.Orange, toggleable = false},
-    {text = "Tpwalk", onCmd = "antilag", offCmd = nil, color = Colors.Orange, toggleable = false},
-    {text = "Gravity", onCmd = "antilag", offCmd = nil, color = Colors.Orange, toggleable = false},
-    {text = "Sit", onCmd = "antilag", offCmd = nil, color = Colors.Orange, toggleable = false},
+    {text = "Tpwalk", onCmd = "tpwalk 1", offCmd = nil, color = Colors.TextDim, toggleable = false},
+    {text = "ToolKill", onCmd = "hkill all", offCmd = nil, color = Colors.Orange, toggleable = false},
 }
 
 for i, action in ipairs(QuickActions) do

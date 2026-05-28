@@ -2280,7 +2280,7 @@ local ChatPlaceholder = createInstance("TextLabel", {
 })
 
 --// ============================================
---// 10. MOBILE QUICK ACTIONS (Dual-Page with Pagination)
+--// 10. MOBILE QUICK ACTIONS (with Dynamic Scaling)
 --// ============================================
 -- Calculate scaled cell size for high-density displays
 local baseCellHeight = 35
@@ -2300,70 +2300,24 @@ local QuickActionsFrame = createInstance("Frame", {
 addCorner(QuickActionsFrame, 8)
 addStroke(QuickActionsFrame, Colors.Border, 1)
 
--- Container for pages
-local PagesContainer = createInstance("Frame", {
-    Name = "PagesContainer",
-    Size = UDim2.new(1, -12, 1, -50),
-    Position = UDim2.new(0, 6, 0, 6),
-    BackgroundTransparency = 1,
-    ClipsDescendants = true,
+local QuickActionsGrid = createInstance("UIGridLayout", {
+    CellSize = UDim2.new(0.33, -4, 0, scaledCellHeight),
+    CellPadding = UDim2.new(0, 4, 0, 4),
+    SortOrder = Enum.SortOrder.LayoutOrder,
     Parent = QuickActionsFrame
 })
 
--- Page 1 Grid
-local Page1 = createInstance("Frame", {
-    Name = "Page1",
-    Size = UDim2.new(1, 0, 1, 0),
-    Position = UDim2.new(0, 0, 0, 0),
-    BackgroundTransparency = 1,
-    Parent = PagesContainer
-})
-
-local QuickActionsGrid1 = createInstance("UIGridLayout", {
-    CellSize = UDim2.new(0.33, -4, 0, scaledCellHeight),
-    CellPadding = UDim2.new(0, 4, 0, 4),
-    SortOrder = Enum.SortOrder.LayoutOrder,
-    Parent = Page1
-})
-
 createInstance("UIPadding", {
     PaddingTop = UDim.new(0, 6),
     PaddingBottom = UDim.new(0, 6),
     PaddingLeft = UDim.new(0, 6),
     PaddingRight = UDim.new(0, 6),
-    Parent = Page1
+    Parent = QuickActionsFrame
 })
 
--- Page 2 Grid
-local Page2 = createInstance("Frame", {
-    Name = "Page2",
-    Size = UDim2.new(1, 0, 1, 0),
-    Position = UDim2.new(1, 0, 0, 0),
-    BackgroundTransparency = 1,
-    Parent = PagesContainer
-})
-
-local QuickActionsGrid2 = createInstance("UIGridLayout", {
-    CellSize = UDim2.new(0.33, -4, 0, scaledCellHeight),
-    CellPadding = UDim2.new(0, 4, 0, 4),
-    SortOrder = Enum.SortOrder.LayoutOrder,
-    Parent = Page2
-})
-
-createInstance("UIPadding", {
-    PaddingTop = UDim.new(0, 6),
-    PaddingBottom = UDim.new(0, 6),
-    PaddingLeft = UDim.new(0, 6),
-    PaddingRight = UDim.new(0, 6),
-    Parent = Page2
-})
-
--- Page state
-local currentPage = 1
+-- Quick Actions with toggle state tracking
 local QuickActionStates = {}
-
--- Page 1 Actions (Real Commands)
-local Page1Actions = {
+local QuickActions = {
     {text = "Fly", onCmd = "fly", offCmd = "unfly", color = Colors.Blue, toggleable = true},
     {text = "Speed", onCmd = "speed 100", offCmd = "speed 16", color = Colors.Green, toggleable = true},
     {text = "ESP", onCmd = "esp", offCmd = "noesp", color = Colors.Purple, toggleable = true},
@@ -2372,23 +2326,13 @@ local Page1Actions = {
     {text = "Teleport", onCmd = "goto random", offCmd = nil, color = Colors.Blue, toggleable = false},
     {text = "Invisible", onCmd = "invisible", offCmd = "visible", color = Colors.Purple, toggleable = true},
     {text = "Reset", onCmd = "reset", offCmd = nil, color = Colors.TextDim, toggleable = false},
-    {text = "Anti-Lag", onCmd = "antilag", offCmd = nil, color = Colors.Orange, toggleable = false},
+    {text = "Fling", onCmd = "antilag", offCmd = nil, color = Colors.Orange, toggleable = false},
+    {text = "Tpwalk", onCmd = "antilag", offCmd = nil, color = Colors.Orange, toggleable = false},
+    {text = "Gravity", onCmd = "antilag", offCmd = nil, color = Colors.Orange, toggleable = false},
+    {text = "Sit", onCmd = "antilag", offCmd = nil, color = Colors.Orange, toggleable = false},
 }
 
--- Page 2 Actions (Placeholder buttons with speed command)
-local Page2Actions = {}
-for i = 1, 12 do
-    table.insert(Page2Actions, {
-        text = "Button " .. i,
-        onCmd = "speed 100",
-        offCmd = nil,
-        color = Color3.fromRGB(math.random(100, 200), math.random(100, 200), math.random(100, 200)),
-        toggleable = false
-    })
-end
-
--- Helper function to create button for both pages
-local function createQuickActionButton(action, parentFrame, layoutOrder)
+for i, action in ipairs(QuickActions) do
     local btn = createInstance("TextButton", {
         Name = "QuickAction_" .. action.text,
         Size = UDim2.new(0, 0, 0, 0),
@@ -2398,21 +2342,76 @@ local function createQuickActionButton(action, parentFrame, layoutOrder)
         TextColor3 = Colors.Text,
         Font = Enum.Font.GothamBold,
         TextSize = scaledFontSize,
-        LayoutOrder = layoutOrder,
-        Parent = parentFrame
+        LayoutOrder = i,
+        Parent = QuickActionsFrame
     })
     addCorner(btn, 4)
     
+    -- Initialize state before setting up events
     QuickActionStates[action.text] = false
     
-    -- Single combined click handler (reduces connection overhead)
+    -- Helper function to update button visual based on toggle state
+    local function updateButtonVisual()
+        local isActive = action.toggleable and QuickActionStates[action.text]
+        if isActive then
+            -- Active toggle state - show highlighted
+            btn.BackgroundTransparency = 0.2
+            btn.TextColor3 = Color3.new(1, 1, 1)
+        else
+            -- Default/inactive state
+            btn.BackgroundTransparency = 0.7
+            btn.TextColor3 = Colors.Text
+        end
+    end
+    
+    -- Desktop hover effects (only apply on non-mobile)
+    if not IsMobile then
+        ConnectPersistent(btn.MouseEnter, function()
+            local isActive = QuickActionStates[action.text]
+            TweenService:Create(btn, TweenInfo.new(0.1), {
+                BackgroundTransparency = isActive and 0.1 or 0.3,
+                TextColor3 = Color3.new(1, 1, 1)
+            }):Play()
+        end)
+        
+        ConnectPersistent(btn.MouseLeave, function()
+            -- Respect toggle state when leaving
+            local isActive = QuickActionStates[action.text]
+            local targetTransparency = isActive and 0.2 or 0.7
+            local targetColor = isActive and Color3.new(1, 1, 1) or Colors.Text
+            TweenService:Create(btn, TweenInfo.new(0.1), {
+                BackgroundTransparency = targetTransparency,
+                TextColor3 = targetColor
+            }):Play()
+        end)
+    end
+    
+    -- Press effect (works on both mobile and desktop)
+    ConnectPersistent(btn.MouseButton1Down, function()
+        TweenService:Create(btn, TweenInfo.new(0.05), {
+            BackgroundTransparency = 0
+        }):Play()
+    end)
+    
+    ConnectPersistent(btn.MouseButton1Up, function()
+        -- Return to appropriate state after press
+        local isActive = QuickActionStates[action.text]
+        local targetTransparency = isActive and 0.2 or 0.7
+        TweenService:Create(btn, TweenInfo.new(0.1), {
+            BackgroundTransparency = targetTransparency
+        }):Play()
+    end)
+    
+    -- Click/Tap handler (works on both mobile and desktop)
     ConnectPersistent(btn.MouseButton1Click, function()
         if action.toggleable then
-            QuickActionStates[action.text] = not QuickActionStates[action.text]
-            local cmd = QuickActionStates[action.text] and action.onCmd or action.offCmd
-            local targetTransparency = QuickActionStates[action.text] and 0.2 or 0.7
-            local targetColor = QuickActionStates[action.text] and Color3.new(1, 1, 1) or Colors.Text
+            -- Toggle state
+            local wasActive = QuickActionStates[action.text]
+            QuickActionStates[action.text] = not wasActive
+            local isNowActive = QuickActionStates[action.text]
             
+            -- Execute appropriate command
+            local cmd = wasActive and action.offCmd or action.onCmd
             if cmd then
                 InputBox.Text = cmd
                 InputBox:CaptureFocus()
@@ -2420,101 +2419,30 @@ local function createQuickActionButton(action, parentFrame, layoutOrder)
                 InputBox:ReleaseFocus(true)
             end
             
+            -- Visual feedback for toggle state (immediate update)
+            local targetTransparency = isNowActive and 0.2 or 0.7
+            local targetColor = isNowActive and Color3.new(1, 1, 1) or Colors.Text
             btn.BackgroundTransparency = targetTransparency
             btn.TextColor3 = targetColor
         else
+            -- Non-toggleable actions (one-time execution)
             InputBox.Text = action.onCmd
             InputBox:CaptureFocus()
             task.wait(0.1)
             InputBox:ReleaseFocus(true)
         end
     end)
-    
-    -- Hover effects (only on desktop)
-    if not IsMobile then
-        ConnectPersistent(btn.MouseEnter, function()
-            TweenService:Create(btn, TweenInfo.new(0.1), {BackgroundTransparency = 0.3}):Play()
-        end)
-        
-        ConnectPersistent(btn.MouseLeave, function()
-            local targetTransp = action.toggleable and QuickActionStates[action.text] and 0.2 or 0.7
-            TweenService:Create(btn, TweenInfo.new(0.1), {BackgroundTransparency = targetTransp}):Play()
-        end)
-    end
 end
 
--- Create buttons for both pages
-for i, action in ipairs(Page1Actions) do
-    createQuickActionButton(action, Page1, i)
-end
-
-for i, action in ipairs(Page2Actions) do
-    createQuickActionButton(action, Page2, i)
-end
-
-local rows = math.ceil(math.max(#Page1Actions, #Page2Actions) / 3)
+local rows = math.ceil(#QuickActions / 3)
 local gridHeight = (rows * scaledCellHeight) + ((rows - 1) * 4) + 12
-local totalHeight = gridHeight + 44
 
--- Navigation arrows (bottom corners)
-local LeftArrow = createInstance("TextButton", {
-    Name = "LeftArrow",
-    Size = UDim2.new(0, 40, 0, 40),
-    Position = UDim2.new(0, 8, 1, -44),
-    BackgroundColor3 = Colors.Purple,
-    BackgroundTransparency = 0.5,
-    Text = "◀",
-    TextColor3 = Colors.Text,
-    Font = Enum.Font.GothamBold,
-    TextSize = 20,
-    Visible = false,
-    Parent = QuickActionsFrame
-})
-addCorner(LeftArrow, 6)
-
-local RightArrow = createInstance("TextButton", {
-    Name = "RightArrow",
-    Size = UDim2.new(0, 40, 0, 40),
-    Position = UDim2.new(1, -48, 1, -44),
-    BackgroundColor3 = Colors.Purple,
-    BackgroundTransparency = 0.5,
-    Text = "▶",
-    TextColor3 = Colors.Text,
-    Font = Enum.Font.GothamBold,
-    TextSize = 20,
-    Visible = false,
-    Parent = QuickActionsFrame
-})
-addCorner(RightArrow, 6)
-
--- Page navigation function
-local function switchPage(pageNum)
-    currentPage = pageNum
-    
-    local targetPosPage1 = pageNum == 1 and UDim2.new(0, 0, 0, 0) or UDim2.new(-1, 0, 0, 0)
-    local targetPosPage2 = pageNum == 2 and UDim2.new(0, 0, 0, 0) or UDim2.new(1, 0, 0, 0)
-    
-    TweenService:Create(Page1, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Position = targetPosPage1}):Play()
-    TweenService:Create(Page2, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Position = targetPosPage2}):Play()
-    
-    LeftArrow.Visible = (pageNum == 2)
-    RightArrow.Visible = (pageNum == 1)
-end
-
--- Arrow click handlers
-ConnectPersistent(LeftArrow.MouseButton1Click, function()
-    switchPage(1)
-end)
-
-ConnectPersistent(RightArrow.MouseButton1Click, function()
-    switchPage(2)
-end)
-
--- Quick Actions Toggle
+-- Quick Actions Toggle moved to left of input box for mobile (to avoid minimizing obstruction)
 local QuickActionsToggle = createInstance("TextButton", {
     Name = "QuickActionsToggle",
     Size = UDim2.new(0, QuickActionWidth, 0, QuickActionWidth),
-    Position = UDim2.new(0, 8 + BtnWidth + 6, 0, 10),
+    AnchorPoint = Vector2.new(0, 0), -- Top-Left alignment
+    Position = UDim2.new(0, 8 + BtnWidth + 6, 0, 10), -- Placed after Mode Dropdown
     BackgroundColor3 = Colors.Purple,
     BackgroundTransparency = 0.5,
     Text = "⚡",
@@ -2532,8 +2460,7 @@ ConnectPersistent(QuickActionsToggle.MouseButton1Click, function()
     quickActionsOpen = not quickActionsOpen
     if quickActionsOpen then
         QuickActionsFrame.Visible = true
-        TweenService:Create(QuickActionsFrame, TweenInfo.new(0.2), {Size = UDim2.new(1, -16, 0, totalHeight)}):Play()
-        switchPage(1)
+        TweenService:Create(QuickActionsFrame, TweenInfo.new(0.2), {Size = UDim2.new(1, -16, 0, gridHeight)}):Play()
     else
         TweenService:Create(QuickActionsFrame, TweenInfo.new(0.2), {Size = UDim2.new(1, -16, 0, 0)}):Play()
         task.delay(0.2, function()

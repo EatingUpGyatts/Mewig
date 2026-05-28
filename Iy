@@ -2326,15 +2326,15 @@ local QuickActions = {
     {text = "ESP", onCmd = "esp", offCmd = "noesp", color = Colors.Purple, toggleable = true},
     {text = "Noclip", onCmd = "noclip", offCmd = "clip", color = Colors.Orange, toggleable = true},
     {text = "Jump", onCmd = "infjump", offCmd = "uninfjump", color = Colors.Green, toggleable = true},
-    {text = "Teleport", onCmd = "goto random", offCmd = nil, color = Colors.Blue, toggleable = false},
+    {text = "TeleportTool", onCmd = "tptool", offCmd = nil, color = Colors.Blue, toggleable = false},
     {text = "Invisible", onCmd = "invisible", offCmd = "visible", color = Colors.Purple, toggleable = true},
     {text = "Reset", onCmd = "reset", offCmd = nil, color = Colors.TextDim, toggleable = false},
     {text = "Anti-Lag", onCmd = "antilag", offCmd = nil, color = Colors.Orange, toggleable = false},
     
     -- === NEW BUTTONS ===
-    {text = "Godmode", onCmd = "god", offCmd = "ungod", color = Colors.Red, toggleable = true},
-    {text = "Fullbright", onCmd = "fullbright", offCmd = "nofullbright", color = Colors.Yellow, toggleable = true},
-    {text = "Platform", onCmd = "platform", offCmd = "unplatform", color = Colors.Cyan, toggleable = true},
+    {text = "ToolKill", onCmd = "hkill others", offCmd = nil, color = Colors.Red, toggleable = false},
+    {text = "GhostWalk", onCmd = "tpwalk 2", offCmd = "untpwalk", color = Colors.Yellow, toggleable = true},
+    {text = "Fling", onCmd = "fling", offCmd = "unfling", color = Colors.Cyan, toggleable = true},
 }
 
 for i, action in ipairs(QuickActions) do

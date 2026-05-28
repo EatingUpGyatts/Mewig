@@ -2328,11 +2328,11 @@ local QuickActions = {
     {text = "Jump", onCmd = "infjump", offCmd = "uninfjump", color = Colors.Green, toggleable = true},
     {text = "TeleportTool", onCmd = "tptool", offCmd = nil, color = Colors.Blue, toggleable = false},
     {text = "Invisible", onCmd = "invisible", offCmd = "visible", color = Colors.Purple, toggleable = true},
-    {text = "GoHome", onCmd = "twp e otify set!", offCmd = nil, color = Colors.TextDim, toggleable = false},
+    {text = "GoHome", onCmd = "twp e", offCmd = nil, color = Colors.TextDim, toggleable = false},
     
     {text = "SetHome", 
-        onCmd = "swp e\notify set!", 
-        offCmd = "cwp\notify clear!", 
+        onCmd = "swp e\ notify set!", 
+        offCmd = "cwp\ notify clear!", 
         color = Colors.Orange, 
         toggleable = false
     },
